@@ -1,0 +1,23 @@
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: prometheus-scaledobject
+  namespace: default
+spec:
+  scaleTargetRef:
+    name: example-deploy
+  pollingInterval: 15
+  cooldownPeriod: 15
+  minReplicaCount: 1
+  maxReplicaCount: 10
+  advanced:
+    horizontalPodAutoscalerConfig:
+      behavior:
+        scaleDown:
+          stabilizationWindowSeconds: 0
+  triggers:
+    - type: prometheus
+      metadata:
+        serverAddress: http://prometheus-operated.monitoring.svc.cluster.local:9090
+        threshold: "11"
+        query: sum(rate(python_request_operations_total[1m]))
