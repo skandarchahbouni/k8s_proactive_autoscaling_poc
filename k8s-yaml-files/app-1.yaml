@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-1
+  labels:
+    app: app-1
+spec:
+  selector:
+    matchLabels:
+      app: app-1
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: app-1
+    spec:
+      containers:
+        - name: app-1
+          image: aimvector/python:metrics
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 5000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: app-1
+  labels:
+    app: app-1
+spec:
+  type: ClusterIP
+  selector:
+    app: app-1
+  ports:
+    - protocol: TCP
+      name: web
+      port: 3000
+      targetPort: 5000
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  labels:
+  name: app-1
+  namespace: default
+spec:
+  endpoints:
+    - interval: 2s
+      port: web
+  selector:
+    matchLabels:
+      app: app-1
+
+---
+# commands:
+# - k port-forward svc/prometheus-operated 9090:9090 -n monitoring
+# - k port-forward svc/app-1 3000:3000 -n default
+# - curl -g 'http://localhost:9090/api/v1/query_range?query=rate(python_request_operations_total[1m])&start=2024-03-23T10:42:56.00Z&end=2024-03-23T10:51:28.00Z&step=15s'
+# - k get so so-1 --watch -o custom-columns=ACTIVE:.status.conditions[1].status

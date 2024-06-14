@@ -1,8 +1,12 @@
 import requests
 import pandas as pd
+from datetime import datetime, timedelta, timezone
 
 
-def fetch_prometheus_data(prometheus_url, query, start_time, end_time, step):
+# ----- Functions
+def fetch_prometheus_data(
+    prometheus_url: str, query: str, start_time: str, end_time: str, step: str
+) -> list | None:
     try:
         params = {"query": query, "start": start_time, "end": end_time, "step": step}
         response = requests.get(prometheus_url + "/api/v1/query_range", params=params)
@@ -14,23 +18,83 @@ def fetch_prometheus_data(prometheus_url, query, start_time, end_time, step):
                 f"Failed to fetch data from Prometheus. Status code: {response.status_code}"
             )
             return None
-    except requests.exceptions.RequestException as e:
-        print(f"Failed to fetch data from Prometheus: {e}")
-        return None
+    except requests.exceptions.ConnectionError:
+        print("A connection error occurred. [fetch_prometheus_data function]")
+    except requests.exceptions.Timeout:
+        print("The request timed out. [fetch_prometheus_data function]")
+    except requests.exceptions.HTTPError as _:
+        print("HTTP Error. [fetch_prometheus_data function]")
+    except requests.exceptions.RequestException as _:
+        print("An error occurred. [fetch_prometheus_data function]")
+    except IndexError:
+        print("IndexError [fetch_prometheus_data function]")
+    except KeyError:
+        print("KeyError [fetch_prometheus_data function]")
+    except Exception:
+        print("Exception [fetch_prometheus_data function]")
+    return None
 
 
-# Replace 'http://localhost:9090' with your Prometheus server URL
-prometheus_url = "http://localhost:9090"
-query = "rate(python_request_operations_total[1m])"
-start_time = "2024-03-23T10:42:56.00Z"
-end_time = "2024-03-23T10:51:28.00Z"
-step = "15s"
-
-data = fetch_prometheus_data(prometheus_url, query, start_time, end_time, step)
-
-if data:
-    values = data.get("data").get("result")[0].get("values")
+def convert_to_dataframe(data: list) -> pd.DataFrame:
+    # Convert to DataFrame
     df = pd.DataFrame(data, columns=["timespmp", "value"])
-    print(df)
-else:
-    print("Failed to fetch data from Prometheus.")
+    # Convert 'timespmp' column to datetime
+    df["timespmp"] = pd.to_datetime(df["timespmp"], unit="s")
+    # Convert 'value' column to float
+    df["value"] = df["value"].astype(float)
+    # Set 'timespmp' column as index
+    df.set_index("timespmp", inplace=True)
+    return df
+
+
+def get_closest_three_minutes_ago_value(df: pd.DataFrame, period: int) -> float:
+    # Get current timestamp
+    current_time = datetime.now()
+    # Subtract 3 minutes
+    three_minutes_ago = current_time - timedelta(minutes=period)
+    # Convert to pandas Timestamp object
+    three_minutes_ago_pandas = pd.Timestamp(three_minutes_ago)
+    # Query the closest datetime index value
+    iloc_idx = df.index.get_indexer([three_minutes_ago_pandas], method="nearest")[0]
+    value = df.iloc[iloc_idx]["value"]
+    return value
+
+
+def simulate_prediction(prometheus_url: str, query: str, period: int, step: str) -> int:
+    current_time = datetime.now(timezone.utc)
+    fort_minutes_ago = current_time - timedelta(minutes=period + 1)
+    current_time_formatted = current_time.strftime("%Y-%m-%dT%H:%M:%S.00Z")
+    fort_minutes_ago_formatted = fort_minutes_ago.strftime("%Y-%m-%dT%H:%M:%S.00Z")
+    data = fetch_prometheus_data(
+        prometheus_url=prometheus_url,
+        query=query,
+        start_time=fort_minutes_ago_formatted,
+        end_time=current_time_formatted,
+        step=step,
+    )
+    if not data:
+        return
+    # convert to dataframe
+    df = convert_to_dataframe(data)
+    # simulate prediction
+    value = get_closest_three_minutes_ago_value(df=df, period=period)
+    return int(value)
+
+
+# -------- just for testing
+# if __name__ == "__main__":
+#     prometheus_url = "http://localhost:9090"
+#     query = "sum(rate(python_request_operations_total[1m]))"
+#     period = 3
+#     step = "15s"
+
+#     # try:
+#     #     predicted_value = simulate_prediction(
+#     #         prometheus_url=prometheus_url, query=query, period=period, step=step
+#     #     )
+#     # except Exception as _:
+#     #     print("Exception")
+
+#     predicted_value = simulate_prediction(
+#         prometheus_url=prometheus_url, query=query, period=period, step=step
+#     )

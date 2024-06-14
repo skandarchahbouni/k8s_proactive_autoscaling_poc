@@ -1,0 +1,25 @@
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: so-2
+  namespace: default
+spec:
+  scaleTargetRef:
+    name: app-2
+  pollingInterval: 30
+  cooldownPeriod: 15
+  minReplicaCount: 1
+  maxReplicaCount: 10
+  advanced:
+    horizontalPodAutoscalerConfig:
+      behavior:
+        scaleDown:
+          stabilizationWindowSeconds: 0
+  triggers:
+    - type: external
+      metadata:
+        scalerAddress: external-scaler-service.default.svc.cluster.local:50051
+        serverAddress: http://prometheus-operated.monitoring.svc.cluster.local:9090
+        threshold: "5"
+        query: sum(rate(python_request_operations_total{service="app-2"}[1m]))
+        metric: rps # requests per second
