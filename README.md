@@ -11,6 +11,10 @@ This project implements a proof-of-concept (POC) for proactive autoscaling in Ku
 - **Traffic Simulation**: 🚦 Using K6 to simulate traffic, enabling testing of the proactive scaling behavior.
 - **Simple Simulation**: 🧪 In this POC, we use predictable traffic patterns to simulate the behavior of an ML model without actual predictions.
 
+## 🎥 Demo
+
+Check out the [demo](https://drive.google.com/file/d/1VYfN1iHHSmeXOGnW2xvoZHSWxCSc6OqO/view?usp=sharing) video to see the proactive autoscaling system in action!
+
 ## 🏗️ Components
 
 1. **Kubernetes in Docker (KinD)**: 🐳 Used to set up a local Kubernetes cluster.
