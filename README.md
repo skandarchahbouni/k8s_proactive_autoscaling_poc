@@ -13,7 +13,7 @@ This project implements a proof-of-concept (POC) for proactive autoscaling in Ku
 
 ## 🎥 Demo
 
-Check out the [demo](https://drive.google.com/file/d/1VYfN1iHHSmeXOGnW2xvoZHSWxCSc6OqO/view?usp=sharing) video to see the proactive autoscaling system in action!
+- Check out the [demo](https://drive.google.com/file/d/1VYfN1iHHSmeXOGnW2xvoZHSWxCSc6OqO/view?usp=sharing) video to see the proactive autoscaling system in action!
 
 ## 🏗️ Components
 
